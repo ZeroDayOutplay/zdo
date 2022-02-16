@@ -39,7 +39,7 @@ int main(){
         return 1;
     }
     
-    printf("[+] Listening for Incomming Connections...\n");
+    printf("\n[+] Listening for Incomming Connections...\n");
 
     if (listen(sock, 3) < 0){
         printf("LISTEN ERROR!");
@@ -63,6 +63,18 @@ int main(){
 
 
 
+char *slice(char *ch, int from, int to){
+    int diff = to-from;
+    char *sliced = malloc(diff);
+    int i;
+    for (i=from; i<to; i++){
+        *(sliced+i-from) = ch[i];
+    }
+    *(sliced+i-from) = '\0';
+    return sliced;
+}
+
+
 void Shell(int sock){
     char SendCMD[1024];
     char RecvCMD[1048576];
@@ -71,24 +83,25 @@ void Shell(int sock){
         bzero(&SendCMD, sizeof(SendCMD));
         bzero(&RecvCMD, sizeof(RecvCMD));
         
-        printf("Enter Command > ");
+        printf("\n[*] Enter Command > ");
         
         fgets(SendCMD, sizeof(SendCMD), stdin);
         strtok(SendCMD, "\n");
+        
+        if (!strcmp(SendCMD, "clear")){
+            system("clear");
+            continue;
+        }
 
         send(sock, SendCMD, sizeof(SendCMD), 0);
 
         if (!strcmp(SendCMD, "quit")){
+            printf("\n[-] Quitting...\n");
             break;
         }
 
         recv(sock, RecvCMD, sizeof(RecvCMD), MSG_WAITALL); //requests that the operation block until the full request is satisfied
 
-        if (!strlen(RecvCMD)){
-            printf("[!] This Command is not recognized.\n");
-            continue;
-        }
-
-        printf("%s\n", RecvCMD);
+        printf("\n%s\n", RecvCMD);
     }
 }
