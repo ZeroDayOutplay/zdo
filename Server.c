@@ -56,6 +56,8 @@ int main(){
         return 1;
     }
 
+    printf("\n[+] Target Connected.\n");
+
     Shell(client_sock);
 
     return 0;
